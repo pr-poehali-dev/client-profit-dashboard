@@ -5,11 +5,30 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import Icon from '@/components/ui/icon'
 
 export default function Index() {
   const [selectedPeriod, setSelectedPeriod] = useState('month')
   const [selectedAssetType, setSelectedAssetType] = useState('all')
+  const [chatMessages, setChatMessages] = useState([
+    { id: 1, type: 'assistant', content: 'Привет! Я помогу создать новые виджеты для вашего дашборда. Опишите, какую аналитику вы хотели бы видеть.' }
+  ])
+  const [chatInput, setChatInput] = useState('')
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [subscribers, setSubscribers] = useState(1247)
+  const [views, setViews] = useState(3892)
+  const [promptTemplates, setPromptTemplates] = useState([
+    { id: 1, name: 'Анализ доходности', prompt: 'Создай виджет для анализа доходности портфеля за выбранный период' },
+    { id: 2, name: 'Риск-анализ', prompt: 'Добавь виджет оценки рисков с индикаторами VaR и стресс-тестами' }
+  ])
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [newTemplatePrompt, setNewTemplatePrompt] = useState('')
 
   // Данные для дашборда
   const portfolioMetrics = {
@@ -23,7 +42,7 @@ export default function Index() {
     { name: 'Акции', value: 45, amount: 1102500, color: 'bg-corporate-blue' },
     { name: 'Облигации', value: 30, amount: 735000, color: 'bg-navy' },
     { name: 'Депозиты', value: 20, amount: 490000, color: 'bg-success-green' },
-    { name: 'Валюта', value: 5, amount: 122500, color: 'bg-light-gray' }
+    { name: 'Валюта', value: 5, amount: 122500, color: 'bg-gray-400' }
   ]
 
   const recentTransactions = [
@@ -39,6 +58,48 @@ export default function Index() {
     { name: 'Волатильность', value: '18.5%', status: 'high' }
   ]
 
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return
+    
+    const newMessage = {
+      id: chatMessages.length + 1,
+      type: 'user',
+      content: chatInput
+    }
+    
+    const aiResponse = {
+      id: chatMessages.length + 2,
+      type: 'assistant',
+      content: `Отлично! Я создаю виджет для "${chatInput}". Новый виджет будет добавлен в раздел аналитики с интерактивными графиками и фильтрами.`
+    }
+    
+    setChatMessages([...chatMessages, newMessage, aiResponse])
+    setChatInput('')
+  }
+
+  const handleSubscribe = () => {
+    setIsSubscribed(!isSubscribed)
+    setSubscribers(prev => isSubscribed ? prev - 1 : prev + 1)
+  }
+
+  const handleSaveTemplate = () => {
+    if (!newTemplateName.trim() || !newTemplatePrompt.trim()) return
+    
+    const newTemplate = {
+      id: promptTemplates.length + 1,
+      name: newTemplateName,
+      prompt: newTemplatePrompt
+    }
+    
+    setPromptTemplates([...promptTemplates, newTemplate])
+    setNewTemplateName('')
+    setNewTemplatePrompt('')
+  }
+
+  const handleUseTemplate = (template) => {
+    setChatInput(template.prompt)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-light-gray to-white">
       {/* Header */}
@@ -49,9 +110,137 @@ export default function Index() {
               <div className="w-8 h-8 bg-gradient-to-r from-navy to-corporate-blue rounded-lg flex items-center justify-center">
                 <Icon name="TrendingUp" className="text-white" size={18} />
               </div>
-              <h1 className="text-2xl font-bold text-navy">Аналитический дашборд</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-navy">Аналитический дашборд</h1>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <Icon name="Eye" size={14} />
+                    <span>{views.toLocaleString()} просмотров</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Icon name="Users" size={14} />
+                    <span>{subscribers.toLocaleString()} подписчиков</span>
+                  </div>
+                  <Badge variant="outline" className="text-navy border-navy">
+                    <Icon name="Star" size={12} className="mr-1" />
+                    Рейтинг: 4.8
+                  </Badge>
+                </div>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
+              <Button 
+                onClick={handleSubscribe}
+                variant={isSubscribed ? "outline" : "default"}
+                className={isSubscribed ? "border-navy text-navy" : "bg-navy hover:bg-navy/90"}
+              >
+                <Icon name={isSubscribed ? "UserCheck" : "UserPlus"} size={16} className="mr-2" />
+                {isSubscribed ? 'Отписаться' : 'Подписаться'}
+              </Button>
+              
+              {/* Чат с ИИ */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="border-corporate-blue text-corporate-blue">
+                    <Icon name="MessageSquare" size={16} className="mr-2" />
+                    ИИ Помощник
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-96">
+                  <SheetHeader>
+                    <SheetTitle className="flex items-center space-x-2">
+                      <Icon name="Bot" size={20} />
+                      <span>ИИ Аналитик</span>
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col h-full mt-6">
+                    <ScrollArea className="flex-1 pr-4">
+                      <div className="space-y-4">
+                        {chatMessages.map((message) => (
+                          <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] p-3 rounded-lg ${
+                              message.type === 'user' 
+                                ? 'bg-corporate-blue text-white' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              <p className="text-sm">{message.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    
+                    <Separator className="my-4" />
+                    
+                    {/* Шаблоны промптов */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Шаблоны запросов:</h4>
+                      <div className="space-y-2">
+                        {promptTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            onClick={() => handleUseTemplate(template)}
+                            className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded border"
+                          >
+                            <div className="font-medium">{template.name}</div>
+                            <div className="text-gray-600 truncate">{template.prompt}</div>
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* Добавить новый шаблон */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full mt-2">
+                            <Icon name="Plus" size={14} className="mr-1" />
+                            Добавить шаблон
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Новый шаблон промпта</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium">Название шаблона</label>
+                              <Input
+                                placeholder="Например: Анализ волатильности"
+                                value={newTemplateName}
+                                onChange={(e) => setNewTemplateName(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Текст промпта</label>
+                              <Textarea
+                                placeholder="Опишите, какой виджет или анализ нужно создать..."
+                                value={newTemplatePrompt}
+                                onChange={(e) => setNewTemplatePrompt(e.target.value)}
+                                rows={3}
+                              />
+                            </div>
+                            <Button onClick={handleSaveTemplate} className="w-full">
+                              Сохранить шаблон
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Опишите нужный виджет..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      />
+                      <Button onClick={handleSendMessage} size="sm">
+                        <Icon name="Send" size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
